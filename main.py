@@ -24,14 +24,20 @@ def screen_stocks():
     # 오늘 날짜 기준으로 가장 최근 영업일 찾기
     target_date = stock.get_nearest_business_day_in_inquiry_range(today)
     
-    # 코스피, 코스닥 전 종목 가져오기
-    tickers = stock.get_market_ticker_list(target_date, market="ALL")
+    # --- [중요] 여기가 바뀌었습니다! ---
+    # 전 종목 대신 시가총액 상위 500개만 가져오기
+    print(f"{target_date} 기준 시가총액 상위 500개 종목을 분석합니다...")
+    
+    # 1. 전체 종목의 시가총액 데이터 가져오기
+    df_cap = stock.get_market_cap(target_date, market="ALL")
+    
+    # 2. 시가총액 큰 순서로 정렬해서 상위 500개 뽑기
+    df_cap = df_cap.sort_values(by="시가총액", ascending=False)
+    top500_tickers = df_cap.index[:500].tolist()
     
     selected_stocks = []
     
-    # 분석 시작 (시간이 좀 걸립니다)
-    # 너무 오래 걸리지 않게 시가총액 상위 500개만 테스트하려면 tickers[:500] 으로 고치세요
-    for ticker in tickers: 
+    for ticker in top500_tickers: 
         try:
             # 1년치 데이터 가져오기
             start_date = (datetime.now() - timedelta(days=400)).strftime("%Y%m%d")
@@ -83,7 +89,7 @@ def screen_stocks():
 
     # 결과 보내기
     if selected_stocks:
-        msg = f"🚀 {today} 추천 종목 리스트\n\n" + "\n".join(selected_stocks)
+        msg = f"🚀 {today} 추천 종목 리스트 (상위 500개 중)\n\n" + "\n".join(selected_stocks)
     else:
         msg = f"🔔 {today} 조건에 맞는 종목이 없습니다."
     
